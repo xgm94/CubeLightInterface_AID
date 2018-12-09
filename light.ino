@@ -9,7 +9,7 @@ int currentState = -1; // -1 = reseted, non data
                       // [1..10 means graded
 float initial_GSR = 0.0f;
 float current_GSR = 0.0f;
-const float steps_GSR = 1.0f;
+const float steps_GSR = 4.0f;
 int n_light_steps = 7;
   
 const int speedThreshold = 100;
@@ -52,49 +52,7 @@ void loop() {
   }
   nCurrentConductanceMesure = nCurrentConductanceMesure < nConductanceMesures -1? nCurrentConductanceMesure +1: 0;
   
-           
-
- if(Serial.available() > 0){
-  // fake reset
-  String incom = Serial.readString();
-  if(incom == "r"){
-    currentState = -1;
-    Serial.println("****************");
-    Serial.println("reset");
-  }else{
-
-    if(currentState == -1){
-      initial_GSR = current_GSR  = incom.toInt();;
-      currentState = 0;
-        Serial.println("****************");
-        Serial.println("initializeing");
-        Serial.println("initial GSR: " + (String)initial_GSR);
-        Serial.println("currentState: " +(String) currentState);
-    }else{
-      float delta = incom.toInt() - current_GSR;
-      float increment = delta / (float)steps_GSR;
-      increment = (int) increment;
-
-      Serial.println("****************");
-      Serial.println("updating");
-      Serial.println("delta: " +(String) delta);
-      Serial.println("increment: " +(String) increment);
-
-      if(abs(increment) >= 1){
-        Serial.println("increment grather than 1 ");
-        current_GSR = incom.toInt();
-        for(int i = 0; i <abs( increment); i ++){
-          if( increment > 0){
-            currentState += currentState < n_light_steps -1? 1:0;
-          }else if( increment < 0){
-             currentState += currentState >0? -1:0;
-          }
-        }
-        Serial.println("currentState: " +(String) currentState);
-      }
-    }
-  }
- }
+  manageStates();         
 
  changeStateFeedback(currentState);
  al.AnimateCube(speedIndex);
@@ -116,6 +74,42 @@ void mapAccel2Speed(){
   }
    speedIndex = gy.lerp(speedy,0,200,1,10);  
 }
+
+void manageStates(){
+  // fake reset
+  float incom = meanConductanceMesure;
+
+  if(currentState == -1){
+    initial_GSR = current_GSR  = incom;
+    currentState = 0;
+      Serial.println("****************");
+      Serial.println("initializeing");
+      Serial.println("initial GSR: " + (String)initial_GSR);
+      Serial.println("currentState: " +(String) currentState);
+  }else{
+      float delta = incom - current_GSR;
+      float increment = delta / (float)steps_GSR;
+      increment = (int) increment;
+
+      
+      if(abs(increment) >= 1){
+        Serial.println("****************");
+      Serial.println("updating");
+      Serial.println("delta: " +(String) delta);
+      Serial.println("increment: " +(String) increment);
+        Serial.println("increment grather than 1 ");
+        current_GSR = incom;
+        for(int i = 0; i <abs( increment); i ++){
+          if( increment > 0){
+            currentState += currentState < n_light_steps -1? 1:0;
+          }else if( increment < 0){
+             currentState += currentState >1? -1:0;
+          }
+        }
+        Serial.println("currentState: " +(String) currentState);
+      }
+    }
+  }
 
 void checkReset(){
   if(speedState > resetState){
